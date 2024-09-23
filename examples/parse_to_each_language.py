@@ -22,7 +22,7 @@ languages = ["python", "cpp", "javascript"]
 file_extensions = {"python": ".py", "cpp": ".cpp", "javascript": ".js"}
 
 for language in languages:
-    code = lgbm_to_code.parse_lgbm_model(model, language)
+    code = lgbm_to_code.parse_lgbm_model(model._Booster, language)
     file_name = f"./code/lgbm_model_{language}{file_extensions[language]}"
     with open(file_name, "w") as f:
         f.write(code)

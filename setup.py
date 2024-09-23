@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="lgbm-to-code",  # Your package name
-    version="0.1",  # Package version
+    version="0.2",  # Package version
     author="Daniel Gaskins",
     author_email="danielgaskins99@gmail.com",
     description="Convert a trained LGBM instance into conditionals that return the same output as a predict function. Supports javascript, python and C++.",

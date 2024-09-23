@@ -19,7 +19,7 @@ model = lgb.LGBMRegressor(random_state=42)
 model.fit(X_train, y_train)
 
 # Generate Python code from the trained model
-python_code = lgbm_to_code.parse_lgbm_model(model, "python")
+python_code = lgbm_to_code.parse_lgbm_model(model._Booster, "python")
 
 # Save the Python code to a file
 with open("./code/lgbm_model.py", "w") as f:

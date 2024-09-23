@@ -29,7 +29,7 @@ model.fit(X_train, y_train)
 # Convert to desired language
 languages = ["python", "cpp", "javascript"]
 for language in languages:
-    code = lgbm_to_code.parse_lgbm_model(model, language)
+    code = lgbm_to_code.parse_lgbm_model(model._Booster, language)
     with open(f"lgbm_model_{language}.{'py' if language == 'python' else language}", "w") as f:
         f.write(code)
 ```
@@ -57,7 +57,7 @@ model = lgb.LGBMRegressor(random_state=42)
 model.fit(X_train, y_train)
 
 # Generate Python code
-python_code = lgbm_to_code.parse_lgbm_model(model, "python")
+python_code = lgbm_to_code.parse_lgbm_model(model._Booster, "python")
 
 # Save the code to a file
 with open("lgbm_model.py", "w") as f:

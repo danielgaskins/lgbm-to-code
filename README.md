@@ -1,76 +1,108 @@
 # lgbm-to-code
 
-This package provides functionality to convert trained LightGBM models into native code for different programming languages. This allows you to deploy your models in environments where Python or LightGBM dependencies might not be readily available.
+Generate dependency-free raw-score inference code from a trained, one-output
+LightGBM model.
+
+The generated function is plain source code and does not need Python or LightGBM
+at inference time:
+
+- Python
+- C++17
+- JavaScript (ES module)
+
+Version 0.3 focuses on a narrow promise that can be tested rigorously: generated
+code follows the same numerical tree paths and returns the same raw score as
+LightGBM for supported models.
+
+## Why
+
+Tree models are often trained in Python and then need to run in a browser, a small
+service, a compiled application, or another environment where shipping the full
+LightGBM runtime is undesirable. `lgbm-to-code` turns the learned trees into
+readable conditionals that can be reviewed, compiled, and embedded directly.
 
 ## Installation
 
-```
+```bash
 pip install lgbm-to-code
+```
+
+The unreleased development version can be installed from a clone:
+
+```bash
+pip install -e ".[test]"
 ```
 
 ## Usage
 
 ```python
 import lightgbm as lgb
-from lgbm_to_code import lgbm_to_code
+from lgbm_to_code import parse_lgbm_model
 
-# Train your LightGBM model...
-# For example:
-from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
-
-diabetes = load_diabetes()
-X = diabetes.data
-y = diabetes.target
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = lgb.LGBMRegressor(random_state=42)
+model = lgb.LGBMRegressor(n_estimators=25, random_state=42)
 model.fit(X_train, y_train)
 
-# Convert to desired language
-languages = ["python", "cpp", "javascript"]
-for language in languages:
-    code = lgbm_to_code.parse_lgbm_model(model._Booster, language)
-    with open(f"lgbm_model_{language}.{'py' if language == 'python' else language}", "w") as f:
-        f.write(code)
+python_source = parse_lgbm_model(model, "python")
+cpp_source = parse_lgbm_model(model, "cpp")
+javascript_source = parse_lgbm_model(model, "javascript")
 ```
 
-## Supported Languages
-
-- Python
-- C++
-- JavaScript 
-
-## Example
+The generated function is named `lgbminfer` by default. A safe custom identifier
+can be supplied:
 
 ```python
-import lightgbm as lgb
-from sklearn.datasets import load_diabetes
-from sklearn.model_selection import train_test_split
-from lgbm_to_code import lgbm_to_code
-
-# Load dataset and train model
-diabetes = load_diabetes()
-X = diabetes.data
-y = diabetes.target
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-model = lgb.LGBMRegressor(random_state=42)
-model.fit(X_train, y_train)
-
-# Generate Python code
-python_code = lgbm_to_code.parse_lgbm_model(model._Booster, "python")
-
-# Save the code to a file
-with open("lgbm_model.py", "w") as f:
-    f.write(python_code)
-
-# Now you can use this code in a separate Python environment
+source = parse_lgbm_model(model.booster_, "python", function_name="score_row")
 ```
 
-## Limitations
+## Output contract
 
-- Currently, the code generation only supports numerical features. 
-- The generated code is not optimized for performance.
+The generated function returns `predict(..., raw_score=True)` for supported
+one-output models.
+
+- For ordinary regression objectives, the raw score is normally the prediction.
+- For binary classification, the raw score is the logit. Apply the model's
+  objective transform when a probability is required.
+
+The package does not silently guess output semantics. This is deliberate: exact
+tree traversal and objective-specific post-processing are separate concerns.
+
+## Numerical verification
+
+The automated suite trains a LightGBM regression model with missing values, emits
+all three target languages, executes the Python and JavaScript, compiles and runs
+the C++17, and compares every result to LightGBM raw scores with `rtol=1e-12` and
+`atol=1e-12`.
+
+Run it with:
+
+```bash
+python -m pytest
+```
+
+CI runs the suite on Python 3.10 and 3.12. JavaScript execution uses Node 22 and
+C++ is compiled with `g++ -std=c++17`.
+
+## Supported behavior
+
+- One-output LightGBM `Booster` objects.
+- Fitted LightGBM sklearn estimators through `booster_`.
+- Numerical `<=` splits.
+- LightGBM `None`, `NaN`, and `Zero` missing-value routing.
+- Configurable generated function names with identifier validation.
+- Full double-precision literals in generated source.
+
+## Explicit limitations
+
+- Multiclass ensembles are rejected.
+- Categorical splits are rejected.
+- Probability and other objective transforms are not generated.
+- Generated code favors auditability and portability; it is not yet optimized for
+  code size or latency.
+- Callers remain responsible for feature ordering and schema validation.
+
+Rejecting unsupported models is safer than emitting plausible-looking code with
+different behavior.
 
 ## License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+MIT

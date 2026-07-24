@@ -12,6 +12,14 @@ import pytest
 from lgbm_to_code import parse_lgbm_model
 
 
+class DumpedModel:
+    def __init__(self, dumped: dict[str, object]):
+        self.dumped = dumped
+
+    def dump_model(self) -> dict[str, object]:
+        return self.dumped
+
+
 @pytest.fixture(scope="module")
 def regression_case():
     rng = np.random.default_rng(42)
@@ -140,3 +148,28 @@ def test_rejects_multiclass_model() -> None:
     model.fit(features, target)
     with pytest.raises(ValueError, match="multiclass"):
         parse_lgbm_model(model, "python")
+
+
+def test_zero_missing_routing_follows_default_branch() -> None:
+    model = DumpedModel(
+        {
+            "num_class": 1,
+            "tree_info": [
+                {
+                    "tree_structure": {
+                        "split_feature": 0,
+                        "threshold": 1.5,
+                        "decision_type": "<=",
+                        "missing_type": "Zero",
+                        "default_left": True,
+                        "left_child": {"leaf_value": 2.0},
+                        "right_child": {"leaf_value": -1.0},
+                    }
+                }
+            ],
+        }
+    )
+    generated = python_predictions(
+        parse_lgbm_model(model, "python"), np.asarray([[0.0], [np.nan], [2.0]])
+    )
+    np.testing.assert_array_equal(generated, np.asarray([2.0, 2.0, -1.0]))

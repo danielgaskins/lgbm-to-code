@@ -3,6 +3,10 @@
 Generate dependency-free raw-score inference code from a trained, one-output
 LightGBM model.
 
+Created by [Daniel Gaskins](https://danielgaskins.com/). Read the
+[cross-runtime inference case study](https://danielgaskins.com/lightgbm-model-to-code.html)
+for the design boundary, generated-code examples, and parity-testing method.
+
 The generated function is plain source code and does not need Python or LightGBM
 at inference time:
 

@@ -9,6 +9,11 @@ setup(
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/danielgaskins/lgbm-to-code",  # Your package repository URL
+    project_urls={
+        "Creator": "https://danielgaskins.com/",
+        "Case Study": "https://danielgaskins.com/lightgbm-model-to-code.html",
+        "Source": "https://github.com/danielgaskins/lgbm-to-code",
+    },
     packages=find_packages(),  # Automatically finds and includes your package modules
     classifiers=[
         "Programming Language :: Python :: 3",
